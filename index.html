@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body{
+  background-color: #221e3f;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.x-axis , 
+.y-axis{
+  font: 20px sans-serif;
+  fill:#ffffff;
+}
+.y-axis path,
+.y-axis line,
+.x-axis path,
+.x-axis line {
+  fill: none;
+  stroke: #fff;
+  shape-rendering: crispEdges;
+}
+ .grid-line{
+    stroke: black;
+    shape-rendering: crispEdges;
+    stroke-opacity: .2;
+}
+
+</style>
+<body>
+<script src="./d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var line = d3.svg.line()
+    .interpolate("monotone")
+    .x(function(d) { return x(d.letter)+x.rangeBand()/2; })
+    .y(function(d) { return y(d.endtime); });
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+
+
+d3.tsv("data.tsv", type, function(error, data) {
+  if (error) throw error;
+//绘制背景和网格
+ // svg.append("rect").attr("x",0).attr("y",0).attr("width",width).attr("height",height).style("fill","#0b0d24");
+
+
+
+  x.domain(data.map(function(d) { return d.letter; }));
+  y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+
+  svg.append("g")
+      .attr("class", "x-axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+        d3.selectAll("g.x-axis g.tick") // <-B
+            .append("line") // <-C
+                .classed("grid-line", true)
+                .attr("x1", 0) // <-D
+                .attr("y1", 0)
+                .attr("x2", 0)
+                .attr("y2", - height);  // <-E 
+  svg.append("g")
+      .attr("class", "y-axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("水位/m");
+        d3.selectAll("g.y-axis g.tick")
+            .append("line")
+                .classed("grid-line", true)
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", width) // <-F
+                .attr("y2", 0);
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { 
+        
+          return x(d.letter)+ x.rangeBand()/4;
+        })
+      .attr("width", x.rangeBand()/2)
+      .attr("y", function(d) { 
+        if(d.endtime-d.frequency>0)
+          return y(d.endtime); 
+       else
+          return y(d.frequency);})
+      .attr("height", function(d) { return Math.abs(y(d.endtime) - y(d.frequency)); })
+      .attr("fill",function(d){
+       if(d.endtime-d.frequency>0)
+          return "#E59330"; 
+       else
+          return "#6eaed1";
+      });
+
+    svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", line)
+      .attr("fill","none")
+      .attr("stroke","#20c1db")
+      .attr("stroke-width",2);
+});
+
+function type(d) {
+  d.frequency = +d.frequency;
+  return d;
+}
+
+</script>
